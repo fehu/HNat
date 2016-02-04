@@ -12,7 +12,10 @@
 --
 -----------------------------------------------------------------------------
 
-{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ExistentialQuantification
+           , TypeFamilies
+           , UndecidableInstances
+           #-}
 
 module Nat (
 
@@ -23,8 +26,15 @@ module Nat (
 , N2
 , N3
 
+, (:+:)
+, (:*:)
+
 , SomeNat(..)
 , Nat2Integral(..)
+
+, NList(..)
+, Nats(..)
+, NatsSum
 
 ) where
 
@@ -49,6 +59,20 @@ nPred :: Nat' (Succ n) -> Nat' n; nPred _ = undefined
 
 -----------------------------------------------------------------------------
 
+type family (:+:) (n1 :: Nat) (n2 :: Nat) :: Nat where
+    Succ a :+: b = Succ (a :+: b)
+    Zero   :+: b = b
+
+--    a :+: b = b :+: a
+
+type family (:*:) (n1 :: Nat) (n2 :: Nat) :: Nat where
+    Succ a :*: b = b :+: (a :*: b)
+    Zero :*: b   = Zero
+
+--    a :*: b = b :*: a
+
+-----------------------------------------------------------------------------
+
 type N0 = Zero
 type N1 = Succ N0
 type N2 = Succ N1
@@ -59,4 +83,18 @@ data Nat' (n :: Nat)
 data SomeNat = forall n . (Nat2Integral n) => SomeNat (Nat' n)
 
 -----------------------------------------------------------------------------
+
+data NList = NNil | NCons Nat NList
+
+data family Nats (a :: Nat -> *) (l :: NList)
+
+data instance Nats a NNil           = NatsNil
+data instance Nats a (x `NCons` xs) = NatsCons (a x) (Nats a xs)
+
+type family NatsSum (l :: NList) where
+    NatsSum (NCons n t) = n :+: NatsSum t
+    NatsSum NNil        = N0
+
+-----------------------------------------------------------------------------
+
 
