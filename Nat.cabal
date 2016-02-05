@@ -2,7 +2,7 @@
 -- see http://haskell.org/cabal/users-guide/
 
 name:                Nat
-version:             0.1.1.0
+version:             0.1.2.0
 synopsis:            Natural Type Literals Implementation (for personal use)
 -- description:
 homepage:            https://github.com/fehu/HNat

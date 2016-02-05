@@ -28,12 +28,13 @@ module Nat.Vec (
 , Vec3
 
 , GenVec(..)
-, (+:)
 , vec2list
+, (+:)
 , vecZip, vecZip'
+, vecsZip
 , vecConcat, (+:+)
 , vecsConcat
-
+, vecCombine
 
 , VecElem(..)
 , vecElem1
@@ -61,10 +62,12 @@ data Vec :: Nat -> * -> * where
   VNil  :: Vec Zero a
   VCons :: a -> Vec n a -> Vec (Succ n) a
 
---newtype Flip t b a = Flip { unFlip :: t a b }
 newtype FlippedVec a (n :: Nat) = FlippedVec { flippedVec :: Vec n a }
 
---type Vec' a = forall n . Vec n a
+
+instance (Show a) => Show (Vec n a) where
+    show v = let vs = foldr (\ x acc -> acc ++ "," ++ show x) "" v
+           in "Vec<" ++ tail vs ++ ">"
 
 -----------------------------------------------------------------------------
 
@@ -72,10 +75,15 @@ vec2list :: Vec n a -> [a]
 vec2list (VCons h t) = h : vec2list t
 vec2list VNil = []
 
--- | Prepend a value to a vector
+-- | Prepend a value to a vec.
 infixr 5 +:
 (+:) :: a -> Vec n a -> Vec (Succ n) a
 (+:) = VCons
+
+---- | Append a value to a vec.
+vecAppend :: Vec n a -> a -> Vec (Succ n) a
+vecAppend (VCons h t) a = h +: vecAppend t a
+vecAppend VNil        a = a +: VNil
 
 vecZip :: Vec n a -> [b] -> Vec n (a, b)
 vecZip (VCons a as) (b:bs) = (a, b) +: vecZip as bs
@@ -87,6 +95,10 @@ vecZip' (b:bs) (VCons a as) = (b, a) +: vecZip' bs as
 vecZip' _ VNil = VNil
 vecZip' [] _   = error "vecZip': list is shorter than vector"
 
+vecsZip :: Vec n a -> Vec n b -> Vec n (a, b)
+vecsZip (VCons a as) (VCons b bs) = VCons (a, b) $ vecsZip as bs
+vecsZip VNil VNil = VNil
+
 vecConcat :: Vec n1 a -> Vec n2 a -> Vec (n1 :+: n2) a
 vecConcat (VCons h t) v2 = h +: vecConcat t v2
 vecConcat VNil v2 = v2
@@ -95,6 +107,9 @@ vecConcat VNil v2 = v2
 
 vecsConcat :: Vec l (Vec n a) -> Vec (l :*: n) a
 vecsConcat (VCons h t) = h +:+ vecsConcat t
+
+vecCombine :: (a -> b -> c) -> Vec n a -> Vec n b -> Vec n c
+vecCombine f v1 = fmap (uncurry f) . vecsZip v1
 
 -----------------------------------------------------------------------------
 
@@ -108,11 +123,27 @@ instance Foldable (Vec n) where foldr _ b0 VNil = b0
 
 -----------------------------------------------------------------------------
 
-class GenVec (n :: Nat) where genVec :: (Int -> a) -> Nat' n ->  Vec n a
+--class VecReverse (n :: Nat) where vecReverse :: Vec n a -> Vec n a
+--
+--instance VecReverse N0 where vecReverse _ = VNil
+--instance (VecReverse np) => VecReverse (Succ np) where vecReverse (VCons h t) = vecReverse t +:+ (h +: VNil)
+
+-----------------------------------------------------------------------------
+
+class GenVec (n :: Nat) where genVec     :: (Int -> a) -> Nat' n -> Vec n a
+                              genVecFrom :: Nat' n -> [a] -> Vec n a
+
+class GenVec' (n :: Nat) where genVec'   :: Int -> (Int -> a) -> Nat' n -> Vec n a
+
+instance GenVec' N0 where genVec' _ _ _ = VNil
+instance (GenVec' np, Nat2Integral np) => GenVec' (Succ np) where
+    genVec' nm f n = f (nm - nat2int n + 1) +: genVec' nm f undefined
 
 instance GenVec N0 where genVec _ _ = VNil
-instance (GenVec np, Nat2Integral np) => GenVec (Succ np) where
-    genVec f n = f (nat2int n) +: genVec f undefined
+                         genVecFrom _ _ = VNil
+instance (GenVec np, GenVec' np, Nat2Integral np) => GenVec (Succ np) where
+    genVec f n = genVec' (nat2int n) f n
+    genVecFrom _ (h:t) = h +: genVecFrom undefined t
 
 -----------------------------------------------------------------------------
 
