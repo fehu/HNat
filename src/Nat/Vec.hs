@@ -16,7 +16,6 @@
            , TypeSynonymInstances
            , FlexibleInstances
            , FlexibleContexts
---           , Rank2Types
        #-}
 
 
@@ -120,13 +119,6 @@ instance Functor (Vec n) where fmap f (VCons h t) = VCons (f h) (fmap f t)
 instance Foldable (Vec n) where foldr _ b0 VNil = b0
                                 foldr f b0 (VCons a t) = let res = f a b0
                                                          in foldr f res t
-
------------------------------------------------------------------------------
-
---class VecReverse (n :: Nat) where vecReverse :: Vec n a -> Vec n a
---
---instance VecReverse N0 where vecReverse _ = VNil
---instance (VecReverse np) => VecReverse (Succ np) where vecReverse (VCons h t) = vecReverse t +:+ (h +: VNil)
 
 -----------------------------------------------------------------------------
 
