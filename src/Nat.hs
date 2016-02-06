@@ -28,6 +28,20 @@ module Nat (
 , N4
 , N5
 , N6
+, N7
+, N8
+, N9
+, N10
+, N11
+, N12
+, N13
+, N14
+, N15
+, N16
+, N17
+, N18
+, N19
+, N20
 
 , nat0
 , nat1
@@ -91,6 +105,20 @@ type N3 = Succ N2
 type N4 = Succ N3
 type N5 = Succ N4
 type N6 = Succ N5
+type N7 = Succ N6
+type N8 = Succ N7
+type N9 = Succ N8
+type N10 = Succ N9
+type N11 = Succ N10
+type N12 = Succ N11
+type N13 = Succ N12
+type N14 = Succ N13
+type N15 = Succ N14
+type N16 = Succ N15
+type N17 = Succ N16
+type N18 = Succ N17
+type N19 = Succ N18
+type N20 = Succ N19
 
 data Nat' (n :: Nat)
 
