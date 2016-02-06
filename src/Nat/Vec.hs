@@ -34,6 +34,7 @@ module Nat.Vec (
 , vecConcat, (+:+)
 , vecsConcat
 , vecCombine
+, vecsFoldr
 
 , VecElem(..)
 , vecElem1
@@ -102,13 +103,18 @@ vecConcat :: Vec n1 a -> Vec n2 a -> Vec (n1 :+: n2) a
 vecConcat (VCons h t) v2 = h +: vecConcat t v2
 vecConcat VNil v2 = v2
 
+infixr 4 +:+
 (+:+) = vecConcat
 
 vecsConcat :: Vec l (Vec n a) -> Vec (l :*: n) a
 vecsConcat (VCons h t) = h +:+ vecsConcat t
+vecsConcat VNil = VNil
 
 vecCombine :: (a -> b -> c) -> Vec n a -> Vec n b -> Vec n c
 vecCombine f v1 = fmap (uncurry f) . vecsZip v1
+
+vecsFoldr :: (a -> b -> b) -> Vec n b -> [Vec n a] -> Vec n b
+vecsFoldr f = foldr (vecCombine f)
 
 -----------------------------------------------------------------------------
 
