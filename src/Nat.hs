@@ -59,6 +59,8 @@ module Nat (
 , (:^:)
 , NatRules
 , NatRules2
+, NatRules3
+, NatRules3Pack
 
 , SomeNat(..)
 , Nat2Integral(..)
@@ -78,6 +80,7 @@ module Nat (
 ) where
 
 import Control.Arrow
+import Data.Type.Equality
 
 -----------------------------------------------------------------------------
 -- from https://downloads.haskell.org/~ghc/7.4.1/docs/html/users_guide/kind-polymorphism-and-promotion.html
@@ -112,15 +115,76 @@ type family (:^:) (n :: Nat) (pow :: Nat) :: Nat where
     a :^: Zero   = N1
 
 
+--data instance (n :+: Succ Zero) :~: (Succ n)
+
+
 type NatRules n = ( (n :+: Succ Zero) ~ Succ n
                   , (n :+: Zero) ~ n
 
                   , (n :*: Succ Zero) ~ n
                   , (n :*: Zero) ~ Zero
+--                  , (Succ n) ~ (n :+: Succ Zero)
+--                  , NatRules2 n n
+--                  , NatRules3 n n n
                   )
 
-type NatRules2 n1 n2 = ( (n1 :+: n2) ~ (n2 :+: n1) )
+type NatRules2 n1 n2 = ( (n1 :+: n2) ~ (n2 :+: n1)
+                       , (n1 :+: Succ n2) ~ Succ (n1 :+: n2)
 
+                       , ((n1 :+: N1) :*: n2) ~ (n2 :+: (n1 :*: n2))
+                       )
+
+type NatRules3 a b c = ( ((a :*: c) :+: (b :*: c)) ~ ((a :+: b) :*: c)
+                       , ((a :+: b) :+: c) ~ (a :+: (b :+: c))
+--                       , (a :+: b) :+: c) ~ (a :+: (b :+: c))
+--                       , a :+: b :+: c ~
+                       )
+
+type NatRules3Pack n = ( NatRules3 N1 N1 n
+
+                       , NatRules3 N1 N2 n
+                       , NatRules3 N2 N1 n
+                       , NatRules3 N2 N2 n
+
+                       , NatRules3 N1 N3 n
+                       , NatRules3 N3 N1 n
+                       , NatRules3 N2 N3 n
+                       , NatRules3 N3 N2 n
+                       , NatRules3 N3 N3 n
+
+
+                       , NatRules3 N1 N4 n
+                       , NatRules3 N4 N1 n
+                       , NatRules3 N2 N4 n
+                       , NatRules3 N4 N2 n
+                       , NatRules3 N4 N3 n
+                       , NatRules3 N3 N4 n
+                       , NatRules3 N4 N4 n
+
+
+                       , NatRules3 N1 N5 n
+                       , NatRules3 N5 N1 n
+                       , NatRules3 N2 N5 n
+                       , NatRules3 N5 N2 n
+                       , NatRules3 N3 N5 n
+                       , NatRules3 N5 N3 n
+                       , NatRules3 N5 N4 n
+                       , NatRules3 N4 N5 n
+                       , NatRules3 N5 N5 n
+
+
+                       , NatRules3 N1 N6 n
+                       , NatRules3 N6 N1 n
+                       , NatRules3 N2 N6 n
+                       , NatRules3 N6 N2 n
+                       , NatRules3 N3 N6 n
+                       , NatRules3 N6 N3 n
+                       , NatRules3 N4 N6 n
+                       , NatRules3 N6 N4 n
+                       , NatRules3 N6 N5 n
+                       , NatRules3 N5 N6 n
+                       , NatRules3 N6 N6 n
+                       )
 
 -----------------------------------------------------------------------------
 
@@ -213,5 +277,4 @@ type family NatsSum (l :: NList) :: Nat where
     NatsSum NNil        = N0
 
 -----------------------------------------------------------------------------
-
 
