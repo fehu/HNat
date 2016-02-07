@@ -113,9 +113,14 @@ type family (:^:) (n :: Nat) (pow :: Nat) :: Nat where
 
 
 type NatRules n = ( (n :+: Succ Zero) ~ Succ n
-                  , (n :+: Zero) ~ n )
+                  , (n :+: Zero) ~ n
+
+                  , (n :*: Succ Zero) ~ n
+                  , (n :*: Zero) ~ Zero
+                  )
 
 type NatRules2 n1 n2 = ( (n1 :+: n2) ~ (n2 :+: n1) )
+
 
 -----------------------------------------------------------------------------
 
