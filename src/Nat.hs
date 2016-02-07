@@ -15,6 +15,9 @@
 {-# LANGUAGE ExistentialQuantification
            , TypeFamilies
            , UndecidableInstances
+           , RankNTypes
+           , TypeSynonymInstances
+           , ConstraintKinds
            #-}
 
 module Nat (
@@ -54,15 +57,27 @@ module Nat (
 , (:+:)
 , (:*:)
 , (:^:)
+, NatRules
+, NatRules2
 
 , SomeNat(..)
 , Nat2Integral(..)
 
+, MonoidLike(..)
+
 , NList(..)
 , Nats(..)
+, (+::)
+, MapNats(..)
+, NatsUnzip(..)
+, NPair(..)
+
+, MkNats
 , NatsSum
 
 ) where
+
+import Control.Arrow
 
 -----------------------------------------------------------------------------
 -- from https://downloads.haskell.org/~ghc/7.4.1/docs/html/users_guide/kind-polymorphism-and-promotion.html
@@ -95,6 +110,12 @@ type family (:*:) (n1 :: Nat) (n2 :: Nat) :: Nat where
 type family (:^:) (n :: Nat) (pow :: Nat) :: Nat where
     a :^: Succ b = a :*: (a :^: b)
     a :^: Zero   = N1
+
+
+type NatRules n = ( (n :+: Succ Zero) ~ Succ n
+                  , (n :+: Zero) ~ n )
+
+type NatRules2 n1 n2 = ( (n1 :+: n2) ~ (n2 :+: n1) )
 
 -----------------------------------------------------------------------------
 
@@ -136,6 +157,13 @@ data SomeNat = forall n . (Nat2Integral n) => SomeNat (Nat' n)
 
 -----------------------------------------------------------------------------
 
+class MonoidLike a where mempty'  :: a N0 x
+                         mappend' :: a n1 x -> a n2 x -> a (n1 :+: n2) x
+                         mconcat' :: a m (a n x) -> a (m :*: n) x
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
 data NList = NNil | NCons Nat NList
 
 data family Nats (a :: Nat -> *) (l :: NList)
@@ -143,7 +171,39 @@ data family Nats (a :: Nat -> *) (l :: NList)
 data instance Nats a NNil           = NatsNil
 data instance Nats a (x `NCons` xs) = NatsCons (a x) (Nats a xs)
 
-type family NatsSum (l :: NList) where
+type family MkNats (n :: Nat) (l :: Nat) tail where
+    MkNats n (Succ l') tail = NCons n (MkNats n l' tail)
+    MkNats n Zero tail      = tail
+
+
+infixr 4 +::
+(+::) :: a n -> Nats a ns -> Nats a (NCons n ns)
+(+::) = NatsCons
+
+-----------------------------------------------------------------------------n)
+
+newtype NPair a b (n :: Nat) = NPair (a n, b n)
+
+class NatsUnzip ns where natsUnzip :: Nats (NPair a b) ns -> (Nats a ns, Nats b ns)
+
+instance NatsUnzip NNil where natsUnzip _ = (NatsNil, NatsNil)
+instance (NatsUnzip ns) => NatsUnzip (NCons n ns) where
+    natsUnzip (NatsCons (NPair (a,b)) t) = first (a +::) $ second (b +::)
+                                         $ natsUnzip t
+
+-----------------------------------------------------------------------------
+
+type NatDepTransform a b = forall (n :: Nat) . a n -> b n
+
+class MapNats ns where mapNats :: NatDepTransform a b -> Nats a ns -> Nats b ns
+
+instance MapNats NNil where mapNats _ _ = NatsNil
+instance (MapNats ns) =>MapNats (NCons n ns) where
+    mapNats f (NatsCons h t) = f h +:: mapNats f t
+
+-----------------------------------------------------------------------------
+
+type family NatsSum (l :: NList) :: Nat where
     NatsSum (NCons n t) = n :+: NatsSum t
     NatsSum NNil        = N0
 
