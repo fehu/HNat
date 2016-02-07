@@ -16,6 +16,8 @@
            , TypeSynonymInstances
            , FlexibleInstances
            , FlexibleContexts
+           , RankNTypes
+           , ConstraintKinds
        #-}
 
 
@@ -35,6 +37,8 @@ module Nat.Vec (
 , vecsConcat
 , vecCombine
 , vecsFoldr
+, vecAccMap
+, vecReverse
 
 , VecElem(..)
 , vecElem1
@@ -44,16 +48,16 @@ module Nat.Vec (
 , FlippedVec(..)
 , Vec2d
 , v2Nil
-, (+::)
-, MergeVec2d(..)
+--, MergeVec2d(..)
+, Vec2dFromNats(..)
+, NatsFlatten(..)
 
 , module Nat
+, NatsOps
 
 ) where
 
 import Nat
-
---import Control.Compose ( Flip )
 
 -----------------------------------------------------------------------------
 -- from https://downloads.haskell.org/~ghc/7.4.1/docs/html/users_guide/kind-polymorphism-and-promotion.html
@@ -116,6 +120,15 @@ vecCombine f v1 = fmap (uncurry f) . vecsZip v1
 vecsFoldr :: (a -> b -> b) -> Vec n b -> [Vec n a] -> Vec n b
 vecsFoldr f = foldr (vecCombine f)
 
+vecAccMap :: (a -> b -> a) -> a -> Vec n b -> Vec n a
+vecAccMap f a (VCons b bs) = let a' = f a b
+                           in a' +: vecAccMap f a' bs
+vecAccMap _ _ VNil = VNil
+
+vecReverse :: (NatRules n) => Vec n a -> Vec n a
+vecReverse (VCons h t) = vecReverse t +:+ VCons h VNil
+vecReverse VNil        = VNil
+
 -----------------------------------------------------------------------------
 
 
@@ -125,6 +138,10 @@ instance Functor (Vec n) where fmap f (VCons h t) = VCons (f h) (fmap f t)
 instance Foldable (Vec n) where foldr _ b0 VNil = b0
                                 foldr f b0 (VCons a t) = let res = f a b0
                                                          in foldr f res t
+
+instance MonoidLike Vec where mempty'  = VNil
+                              mappend' = (+:+)
+                              mconcat' = vecsConcat
 
 -----------------------------------------------------------------------------
 
@@ -174,22 +191,27 @@ vecElem3 = vecElem (undefined :: Nat' N3)
 
 -----------------------------------------------------------------------------
 
+type ToVec a b = forall (n :: Nat) . a n -> Vec n b
+
+class Vec2dFromNats ns where vec2dFromNats :: ToVec a b -> Nats a ns -> Vec2d ns b
+
+instance Vec2dFromNats NNil where vec2dFromNats _ _ = v2Nil
+instance (Vec2dFromNats ns') => Vec2dFromNats (NCons n ns') where
+    vec2dFromNats f (NatsCons h t) = FlippedVec (f h) +:: vec2dFromNats f t
+
+
 type Vec2d ns a = Nats (FlippedVec a) ns
 
 v2Nil = NatsNil
 
-infixr 4 +::
-(+::) :: Vec n a -> Vec2d ns a -> Vec2d (NCons n ns) a
-v +:: vs = NatsCons (FlippedVec v) vs
+-----------------------------------------------------------------------------
+
+class NatsFlatten ns where natsFlatten :: ToVec a b -> Nats a ns -> Vec (NatsSum ns) b
+
+instance NatsFlatten NNil where natsFlatten _ _ = VNil
+instance (NatsFlatten ns, NatRules2 n (NatsSum ns)) => NatsFlatten (NCons n ns) where
+    natsFlatten f (NatsCons h t) =  natsFlatten f t +:+ f h
 
 -----------------------------------------------------------------------------
 
-class MergeVec2d ns a where mergeVec2d :: Vec2d ns a -> Vec (NatsSum ns) a
-
-instance MergeVec2d NNil a where mergeVec2d _ = VNil
-instance (MergeVec2d t a) =>
-    MergeVec2d (NCons n1 t) a where
-        mergeVec2d (NatsCons (FlippedVec h) t) = vecConcat h $ mergeVec2d t
-
------------------------------------------------------------------------------
-
+type NatsOps ns = (MapNats ns, NatsUnzip ns, NatsFlatten ns)
