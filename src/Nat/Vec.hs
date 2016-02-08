@@ -18,6 +18,7 @@
            , FlexibleContexts
            , RankNTypes
            , ConstraintKinds
+           , BangPatterns
        #-}
 
 
@@ -27,6 +28,8 @@ module Nat.Vec (
 , Vec1
 , Vec2
 , Vec3
+
+, strictVec
 
 , GenVec(..)
 , vec2list
@@ -72,6 +75,11 @@ newtype FlippedVec a (n :: Nat) = FlippedVec { flippedVec :: Vec n a }
 instance (Show a) => Show (Vec n a) where
     show v = let vs = foldr (\ x acc -> acc ++ "," ++ show x) "" v
            in "Vec<" ++ tail vs ++ ">"
+
+strictVec :: Vec n a -> Vec n a
+strictVec (VCons !h t) = let !t' = strictVec t
+                        in h +: t'
+strictVec VNil = VNil
 
 -----------------------------------------------------------------------------
 
