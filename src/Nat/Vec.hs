@@ -92,7 +92,7 @@ infixr 5 +:
 (+:) :: a -> Vec n a -> Vec (Succ n) a
 (+:) = VCons
 
----- | Append a value to a vec.
+-- | Append a value to a vec.
 vecAppend :: Vec n a -> a -> Vec (Succ n) a
 vecAppend (VCons h t) a = h +: vecAppend t a
 vecAppend VNil        a = a +: VNil

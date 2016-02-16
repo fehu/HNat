@@ -80,7 +80,6 @@ module Nat (
 ) where
 
 import Control.Arrow
-import Data.Type.Equality
 
 -----------------------------------------------------------------------------
 -- from https://downloads.haskell.org/~ghc/7.4.1/docs/html/users_guide/kind-polymorphism-and-promotion.html
@@ -114,8 +113,6 @@ type family (:^:) (n :: Nat) (pow :: Nat) :: Nat where
     a :^: Succ b = a :*: (a :^: b)
     a :^: Zero   = N1
 
-
---data instance (n :+: Succ Zero) :~: (Succ n)
 
 
 type NatRules n = ( (n :+: Succ Zero) ~ Succ n
@@ -249,7 +246,7 @@ infixr 4 +::
 (+::) :: a n -> Nats a ns -> Nats a (NCons n ns)
 (+::) = NatsCons
 
------------------------------------------------------------------------------n)
+-----------------------------------------------------------------------------
 
 newtype NPair a b (n :: Nat) = NPair (a n, b n)
 
